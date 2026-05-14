@@ -144,7 +144,7 @@ const STATUSES = {active:"Працює",vacation:"Відпустка",sick:"Лі
 const ORDER_TYPES = {
   hire:"Про прийом на роботу", fire:"Про звільнення", transfer:"Про переведення",
   discipline:"Про дисциплінарне стягнення", bonus:"Про преміювання", salary:"Про зміну окладу",
-  vacation:"Про надання відпустки", vacation_schedule:"Графік відпусток", sick_leave:"Про відпустку у зв'язку з тимчасовою непрацездатністю",
+  vacation:"Про надання відпустки", vacation_maternity:"Про відпустку у зв'язку з вагітністю та пологами", vacation_child:"Про відпустку для догляду за дитиною", vacation_extra:"Про додаткову відпустку", vacation_unpaid:"Про відпустку без збереження з/п", vacation_schedule:"Графік відпусток", sick_leave:"Про відпустку у зв'язку з тимчасовою непрацездатністю",
   maternity:"Про відпустку у зв'язку з вагітністю та пологами", childcare:"Про відпустку для догляду за дитиною",
   staffing:"Про затвердження штатного розпису", staffing_change:"Про зміни до штатного розпису",
   internal_rules:"Про затвердження правил внутр. розпорядку", provision:"Про затвердження положення",
@@ -159,7 +159,7 @@ const ORDER_GROUPS = [
   },
   {
     id:"vacation", label:"Накази про відпустки", icon:"🌿", color:"#856404",
-    types:["vacation","vacation_schedule","sick_leave","maternity","childcare"]
+    types:["vacation","vacation_maternity","vacation_child","vacation_extra","vacation_unpaid","vacation_schedule","sick_leave","maternity","childcare"]
   },
   {
     id:"activity", label:"Основна діяльність", icon:"📊", color:"#0c5460",
@@ -2596,6 +2596,103 @@ function VacationTracker({employees, leaves, setLeaves, orders, showToast}) {
 }
 
 
+
+// ═══ UKRAINIAN NAME DECLENSION ════════════════════════════════════════════
+function getFullNameGenitive(last, first, patron) {
+  const ln = (last||'').trim();
+  const fn = (first||'').trim();
+  const pn = (patron||'').trim();
+  const lnC = ln.charAt(0).toUpperCase() + ln.slice(1).toLowerCase();
+  const fnC = fn.charAt(0).toUpperCase() + fn.slice(1).toLowerCase();
+  const pnC = pn.charAt(0).toUpperCase() + pn.slice(1).toLowerCase();
+
+  function genLast(w) {
+    const lo = w.toLowerCase();
+    if (/[ое]$/.test(lo)) return w;
+    if (/ський$|зький$|цький$/.test(lo)) return w.slice(0,-2)+'ого';
+    if (/ній$|жній$|дній$/.test(lo)) return w.slice(0,-2)+'ого';
+    if (/ій$/.test(lo)) return w.slice(0,-2)+'ого';
+    if (/ей$/.test(lo)) return w.slice(0,-2)+'ея';
+    if (/ов$|єв$|ев$/.test(lo)) return w+'а';
+    if (/ін$|ин$/.test(lo)) return w+'а';
+    if (/ець$/.test(lo)) return w.slice(0,-3)+'ця';
+    if (/а$/.test(lo)) return w.slice(0,-1)+'и';
+    if (/я$/.test(lo)) return w.slice(0,-1)+'і';
+    if (/[бвгджзклмнпрстфхцчшщ]$/.test(lo)) return w+'а';
+    return w;
+  }
+  function genFirst(w) {
+    const lo = w.toLowerCase();
+    if (/ій$/.test(lo)) return w.slice(0,-2)+'ія';
+    if (/ло$/.test(lo)) return w.slice(0,-1)+'а';
+    if (/ро$/.test(lo)) return w.slice(0,-1)+'а';
+    if (/ія$/.test(lo)) return w.slice(0,-1)+'ї';
+    if (/іна$|ина$/.test(lo)) return w.slice(0,-1)+'и';
+    if (/а$/.test(lo)) return w.slice(0,-1)+'и';
+    if (/[бвгджзклмнпрстфхцчшщ]$/.test(lo)) return w+'а';
+    return w;
+  }
+  function genPatron(w) {
+    const lo = w.toLowerCase();
+    if (/ович$/.test(lo)) return w.slice(0,-4)+'овича';
+    if (/євич$/.test(lo)) return w.slice(0,-4)+'євича';
+    if (/іович$/.test(lo)) return w.slice(0,-5)+'іовича';
+    if (/івна$/.test(lo)) return w.slice(0,-4)+'івни';
+    if (/овна$/.test(lo)) return w.slice(0,-4)+'овни';
+    if (/євна$/.test(lo)) return w.slice(0,-4)+'євни';
+    return w;
+  }
+  return genLast(lnC)+' '+genFirst(fnC)+' '+genPatron(pnC);
+}
+
+function getFullNameDative(last, first, patron) {
+  const ln = (last||'').trim();
+  const fn = (first||'').trim();
+  const pn = (patron||'').trim();
+  const lnC = ln.charAt(0).toUpperCase() + ln.slice(1).toLowerCase();
+  const fnC = fn.charAt(0).toUpperCase() + fn.slice(1).toLowerCase();
+  const pnC = pn.charAt(0).toUpperCase() + pn.slice(1).toLowerCase();
+
+  function datLast(w) {
+    const lo = w.toLowerCase();
+    if (/[ое]$/.test(lo)) return w;
+    if (/ський$|зький$|цький$/.test(lo)) return w.slice(0,-2)+'ому';
+    if (/ній$|жній$|дній$/.test(lo)) return w.slice(0,-2)+'ому';
+    if (/ій$/.test(lo)) return w.slice(0,-2)+'ому';
+    if (/ей$/.test(lo)) return w.slice(0,-2)+'ею';
+    if (/ов$|єв$|ев$/.test(lo)) return w+'у';
+    if (/ін$|ин$/.test(lo)) return w+'у';
+    if (/ець$/.test(lo)) return w.slice(0,-3)+'цю';
+    if (/а$/.test(lo)) return w.slice(0,-1)+'і';
+    if (/я$/.test(lo)) return w.slice(0,-1)+'і';
+    if (/[бвгджзклмнпрстфхцчшщ]$/.test(lo)) return w+'у';
+    return w;
+  }
+  function datFirst(w) {
+    const lo = w.toLowerCase();
+    if (/ій$/.test(lo)) return w.slice(0,-2)+'ію';
+    if (/ло$/.test(lo)) return w.slice(0,-1)+'у';
+    if (/ро$/.test(lo)) return w.slice(0,-1)+'у';
+    if (/ія$/.test(lo)) return w.slice(0,-1)+'ї';
+    if (/іна$|ина$/.test(lo)) return w.slice(0,-1)+'і';
+    if (/а$/.test(lo)) return w.slice(0,-1)+'і';
+    if (/[бвгджзклмнпрстфхцчшщ]$/.test(lo)) return w+'у';
+    return w;
+  }
+  function datPatron(w) {
+    const lo = w.toLowerCase();
+    if (/ович$/.test(lo)) return w.slice(0,-4)+'овичу';
+    if (/євич$/.test(lo)) return w.slice(0,-4)+'євичу';
+    if (/іович$/.test(lo)) return w.slice(0,-5)+'іовичу';
+    if (/івна$/.test(lo)) return w.slice(0,-4)+'івні';
+    if (/овна$/.test(lo)) return w.slice(0,-4)+'овні';
+    if (/євна$/.test(lo)) return w.slice(0,-4)+'євні';
+    return w;
+  }
+  return datLast(lnC)+' '+datFirst(fnC)+' '+datPatron(pnC);
+}
+
+
 // ═══ ORDER DOCX GENERATOR ════════════════════════════════════════════════════
 function generateOrderDocx(order, employees) {
   const emp = (order.employeeIds && order.employeeIds.length > 0)
@@ -2619,56 +2716,66 @@ function generateOrderDocx(order, employees) {
   const monthWord = months[parseInt(dp[1]||'1')-1] || '';
   const dateWord = (dp[2]||'__') + ' ' + monthWord + ' ' + (dp[0]||'____');
   const shortName = ln + ' ' + (fn[0]||'') + '.' + (pn[0]||'') + '.';
+  // Відмінювання ПІБ
+  const fullNameGen = getFullNameGenitive(ln, fn, pn);   // родовий (звільнити КОГО?)
+  const fullNameDat = getFullNameDative(ln, fn, pn);     // давальний (надати КОМУ?)
   const fullName = ln + ' ' + fn + ' ' + pn;
 
   const lines = [];
   const L = s => lines.push(s);
 
   L('<!DOCTYPE html>');
-  L('<html lang="uk">');
-  L('<head><meta charset="UTF-8">');
+  L('<html lang="uk"><head><meta charset="UTF-8">');
   L('<title>Наказ N' + order.number + '</title>');
   L('<style>');
   L('@page{size:A4;margin:2cm 1.5cm 2cm 3cm}');
   L('*{box-sizing:border-box}');
   L('body{font-family:"Times New Roman",Times,serif;font-size:14pt;line-height:1.5;color:#000;margin:0}');
-  L('.hdr-name{text-align:center;font-weight:bold;font-size:15pt;margin:0 0 2px 0}');
-  L('.hdr-short{text-align:center;font-weight:bold;font-size:14pt;margin:0 0 2px 0}');
-  L('.hdr-line{text-align:center;font-size:11pt;border-bottom:1px solid #000;padding-bottom:2px;margin:0 0 2px 0}');
-  L('.order-num{text-align:center;font-weight:bold;font-size:16pt;margin:14px 0 4px 0}');
-  L('.date-city{display:flex;justify-content:space-between;margin:0 0 10px 0;font-size:14pt}');
+  // Шапка — точно як у зразку
+  L('.hdr-name{text-align:center;font-weight:bold;font-size:14pt;margin:0 0 2px 0;text-transform:uppercase}');
+  L('.hdr-addr{text-align:center;font-size:12pt;border-bottom:1px solid #000;padding-bottom:2px;margin:0 0 2px 0}');
+  L('.hdr-tel{text-align:center;font-size:12pt;margin:0 0 14px 0}');
+  L('.order-num{text-align:center;font-weight:bold;font-size:15pt;margin:8px 0 4px 0}');
+  L('.date-city{display:flex;justify-content:space-between;margin:0 0 8px 0;font-size:14pt}');
   L('.subj{text-align:center;font-size:14pt;margin:0}');
   L('.person{text-align:center;font-size:14pt;margin:0 0 18px 0}');
   L('.cmd{font-weight:bold;margin:0 0 10px 0}');
-  L('.pt{text-align:justify;margin:0 0 8px 0;padding-left:2em;text-indent:-1em}');
+  L('.pt{text-align:justify;margin:0 0 6px 0;padding-left:1.5em;text-indent:-1em}');
   L('.basis{margin:14px 0 0 0}');
-  L('.sig{margin-top:40px;display:flex;justify-content:space-between}');
-  L('.acq{margin-top:30px}');
-  L('.acq-line{margin-top:8px}');
+  L('.sig{margin-top:40px;display:flex;justify-content:space-between;font-size:14pt}');
+  L('.acq{margin-top:30px;font-size:14pt}');
+  L('.acq-line{margin-top:8px;font-size:14pt}');
   L('</style>');
   L('</head><body>');
 
-  // Шапка — точно як в зразку
+  // Шапка ТОЧНО як у зразку Наказ_1-В
   L('<p class="hdr-name">ФЕРМЕРСЬКЕ ГОСПОДАРСТВО &#171;БЕНЕФІТ-АГРО&#187;</p>');
-  L('<p class="hdr-short">ФГ &#171;БЕНЕФІТ-АГРО&#187;</p>');
-  L('<p class="hdr-line">Україна, 35154, Рівненська обл., Дубенський р-н., с. Озліїв, &nbsp;вул. Дубенська, буд. 11 &nbsp; ЄДРПОУ 44148298</p>');
-  L('<p class="hdr-line">р/р в АТ КБ &#171;Приватбанк&#187; UA503333910000026006054746643 &nbsp; ІПН 441482917102 &nbsp; тел. 066-367-80-13</p>');
+  L('<p class="hdr-addr">Україна, 35154, Рівненська обл., Дубенський р-н., с. Озліїв, вул. Дубенська, буд. 11 &nbsp; ЄДРПОУ 44148298</p>');
+  L('<p class="hdr-tel">тел. 066-367-80-13</p>');
 
-  // Номер наказу
   L('<p class="order-num">НАКАЗ &#8470; ' + order.number + '</p>');
-
-  // Дата зліва, місто справа — як в зразку
   L('<div class="date-city"><span>' + orderDate + ' р.</span><span>с. Озліїв</span></div>');
 
-  // Тема по центру
-  let subj = ORDER_TYPES[order.type] || 'Наказ';
-  L('<p class="subj">' + subj + '</p>');
+  // Тема
+  let subjText = '';
+  if (order.type === 'vacation') subjText = 'Про надання відпустки';
+  else if (order.type === 'vacation_maternity') subjText = 'Про надання відпустки у зв\'язку з вагітністю та пологами';
+  else if (order.type === 'vacation_child') subjText = 'Про надання відпустки для догляду за дитиною';
+  else if (order.type === 'vacation_extra') subjText = 'Про надання додаткової відпустки';
+  else if (order.type === 'vacation_unpaid') subjText = 'Про надання відпустки без збереження заробітної плати';
+  else if (order.type === 'sick_leave') subjText = 'Про відпустку у зв\'язку з тимчасовою непрацездатністю';
+  else if (order.type === 'hire') subjText = 'Про прийняття на роботу';
+  else if (order.type === 'fire') subjText = 'Про звільнення з роботи';
+  else if (order.type === 'transfer') subjText = 'Про переведення на іншу посаду';
+  else subjText = ORDER_TYPES[order.type] || 'Наказ';
 
-  // ПІБ (скорочено) по центру — тільки якщо один працівник
+  L('<p class="subj">' + subjText + '</p>');
+
+  // ПІБ по центру (скорочено)
   if (!allEmps) {
     L('<p class="person">' + shortName + '</p>');
   } else {
-    L('<p class="person">&nbsp;</p>');
+    L('<p style="margin:0">&nbsp;</p>');
   }
 
   L('<p class="cmd">НАКАЗУЮ:</p>');
@@ -2678,24 +2785,47 @@ function generateOrderDocx(order, employees) {
     if (allEmps) {
       allEmps.forEach(function(e) {
         const efull = e.lastName + ' ' + e.firstName + ' ' + (e.patronymic||'');
-        L('<p class="pt">- Прийняти на роботу &nbsp;<strong>' + efull + '</strong>&nbsp; з ' + dateWord + ' року на посаду &nbsp;' + (e.position||'___________') + '&nbsp; з оплатою праці у розмірі &nbsp;___________&nbsp; грн. посадового окладу згідно штатного розпису.</p>');
+        L('<p class="pt">- Прийняти на роботу &nbsp;' + efull + '&nbsp; з ' + dateWord + ' року на посаду &nbsp;' + (e.position||'___________') + '&nbsp; з оплатою праці у розмірі &nbsp;___________&nbsp; грн. посадового окладу згідно штатного розпису.</p>');
       });
     } else {
-      L('<p class="pt">- Прийняти на роботу &nbsp;<strong>' + fullName + '</strong>&nbsp; з ' + dateWord + ' року на посаду &nbsp;' + (pos||'___________') + '&nbsp; з оплатою праці у розмірі &nbsp;___________&nbsp; грн. посадового окладу згідно штатного розпису.</p>');
+      L('<p class="pt">- Прийняти на роботу &nbsp;' + fullNameGen + '&nbsp; з ' + dateWord + ' року на посаду &nbsp;' + (pos||'___________') + '&nbsp; з оплатою праці у розмірі &nbsp;___________&nbsp; грн. посадового окладу згідно штатного розпису.</p>');
     }
+    L('<p class="pt">- Бухгалтерії забезпечити нарахування заробітної плати у встановленому порядку.</p>');
 
   } else if (order.type === 'fire') {
     const fireText = order.content || 'за згодою двох сторін';
-    const article = order.basis && order.basis.match(/ст\./) ? order.basis : 'ст. 36 п. 1 КЗпП України';
-    L('<p class="pt">- Звільнити &nbsp;<strong>' + fullName + '</strong>&nbsp; з ' + dateWord + ' року із займаної посади &nbsp;' + fireText + '&nbsp; згідно ' + article + '.</p>');
+    const article = (order.basis && order.basis.match(/ст\./)) ? order.basis : 'ст. 36 п. 1 КЗпП України';
+    L('<p class="pt">- Звільнити &nbsp;' + fullNameGen + '&nbsp; з ' + dateWord + ' року із займаної посади &nbsp;' + fireText + '&nbsp; згідно ' + article + '.</p>');
     L('<p class="pt">- Виплатити &nbsp;' + shortName + '&nbsp; компенсацію за невикористану щорічну відпустку.</p>');
 
   } else if (order.type === 'transfer') {
-    L('<p class="pt">- Перевести &nbsp;<strong>' + fullName + '</strong>&nbsp; з ' + dateWord + ' року на посаду &nbsp;' + (order.content||'___________') + '.</p>');
+    L('<p class="pt">- Перевести &nbsp;' + fullNameGen + '&nbsp; з ' + dateWord + ' року на посаду &nbsp;' + (order.content||'___________') + '.</p>');
 
   } else if (order.type === 'vacation') {
-    L('<p class="pt">- Надати &nbsp;<strong>' + fullName + '</strong>&nbsp; щорічну основну оплачувану відпустку тривалістю &nbsp;___&nbsp; календарних днів з &nbsp;___________&nbsp; по &nbsp;___________&nbsp; ' + (dp[0]||'____') + ' року.</p>');
+    const days = order.content ? order.content.match(/(\d+)\s*дн/)?.[1] : '___';
+    L('<p class="pt">- Надати &nbsp;' + fullNameDat + '&nbsp; щорічну основну оплачувану відпустку тривалістю &nbsp;' + (days||'___') + '&nbsp; календарних днів з &nbsp;___________&nbsp; по &nbsp;___________&nbsp; ' + (dp[0]||'____') + ' року.</p>');
     L('<p class="pt">- Бухгалтерії нарахувати та виплатити відпускні у встановлений законом строк.</p>');
+
+  } else if (order.type === 'vacation_maternity') {
+    L('<p class="pt">- Надати &nbsp;' + fullNameDat + '&nbsp; відпустку по вагітності і пологах тривалістю &nbsp;126&nbsp; календарних днів з &nbsp;___________&nbsp; по &nbsp;___________&nbsp; ' + (dp[0]||'____') + ' року.</p>');
+    L('<p class="pt">- Бухгалтерії нарахувати та виплатити допомогу по вагітності і пологах у встановлений законом строк.</p>');
+
+  } else if (order.type === 'vacation_child') {
+    L('<p class="pt">- Надати &nbsp;' + fullNameDat + '&nbsp; відпустку для догляду за дитиною до досягнення нею трирічного віку з &nbsp;___________&nbsp; по &nbsp;___________.</p>');
+    L('<p class="pt">- На період відпустки посада зберігається.</p>');
+
+  } else if (order.type === 'vacation_extra') {
+    const days = order.content ? order.content.match(/(\d+)\s*дн/)?.[1] : '___';
+    L('<p class="pt">- Надати &nbsp;' + fullNameDat + '&nbsp; додаткову оплачувану відпустку тривалістю &nbsp;' + (days||'___') + '&nbsp; календарних днів з &nbsp;___________&nbsp; по &nbsp;___________.</p>');
+    L('<p class="pt">- Бухгалтерії нарахувати та виплатити відпускні у встановлений законом строк.</p>');
+
+  } else if (order.type === 'vacation_unpaid') {
+    const days = order.content ? order.content.match(/(\d+)\s*дн/)?.[1] : '___';
+    L('<p class="pt">- Надати &nbsp;' + fullNameDat + '&nbsp; відпустку без збереження заробітної плати тривалістю &nbsp;' + (days||'___') + '&nbsp; календарних днів з &nbsp;___________&nbsp; по &nbsp;___________.</p>');
+
+  } else if (order.type === 'sick_leave') {
+    L('<p class="pt">- Відсутність &nbsp;' + shortName + '&nbsp; у зв\'язку з тимчасовою непрацездатністю з &nbsp;___________&nbsp; по &nbsp;___________&nbsp; вважати поважною.</p>');
+    L('<p class="pt">- Бухгалтерії нарахувати допомогу по тимчасовій непрацездатності згідно листка непрацездатності.</p>');
 
   } else {
     if (order.content) {
@@ -2708,11 +2838,8 @@ function generateOrderDocx(order, employees) {
   // Підстава
   L('<p class="basis">Підстава: ' + (order.basis || '___________') + '</p>');
 
-  // Підпис — ліворуч посада, праворуч ПІБ як в зразку
-  L('<div class="sig">');
-  L('<span>Голова ФГ &#171;БЕНЕФІТ-АГРО&#187;</span>');
-  L('<span>Михайло ЛОБОЦЬКИЙ</span>');
-  L('</div>');
+  // Підпис
+  L('<div class="sig"><span>Голова ФГ &#171;БЕНЕФІТ-АГРО&#187;</span><span>Михайло ЛОБОЦЬКИЙ</span></div>');
 
   // Ознайомлення
   L('<div class="acq">З наказом ознайомлений(а)</div>');
@@ -2729,8 +2856,6 @@ function generateOrderDocx(order, employees) {
   a.download = 'Наказ_' + safeNum + '_' + safeDate + '.html';
   a.click();
 }
-
-
 
 
 // ═══ DPS REPORT PAGE ════════════════════════════════════════════════════════
